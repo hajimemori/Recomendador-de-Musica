@@ -1,4 +1,4 @@
-import pandas as pd;
+import pandas as pd
 import sklearn.model_selection as ms
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.linear_model import LogisticRegression
