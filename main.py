@@ -1,13 +1,13 @@
-import pandas as pd;
+import pandas as pd
+import numpy as np
 import sklearn.model_selection as ms
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.linear_model import LogisticRegression
 
 breakline = "############################################################"
 
-
 data = pd.read_csv("./Data.csv", sep=",")
-print(data)
+# print(data)
 
 
 ## Tratamento de dados
@@ -16,63 +16,86 @@ print(data)
 
 condicao = data["duracao"] < 0
 linhas = list(data[condicao].index.values)
-data.drop(linhas, axis=0, inplace = True)
+data.drop(linhas, axis=0, inplace=True)
 
-# Removendo o id dos clientes da base
-data.drop(["id_cliente"], axis='columns', inplace=True)
+# verificando os clientes da base
+arrayClientes = data.id_cliente.unique()
 
+# Separando a base de dados por cliente
 
-# transformando as colunas de categorias em Dummy
+usuarios = []
+for i in arrayClientes:
+    condicao = data["id_cliente"] == i;
+    cliente = data[condicao]
+    usuarios.append(cliente)
 
-data_dummy = pd.get_dummies(data)
+## Criando variaveis para salvar os resultados
+ProbGostar = []
+MatrizesDeConfusao = []
+Acuracia = []
 
-## separando o "like/deslike" dos dados em variaveis diferentes
-coluna = data_dummy.columns.get_loc("gostou")
+for usuario in usuarios:
+    # Retirando a coluna de id_cliente da base
+    usuarioSemID = usuario.iloc[:, usuario.columns != "id_cliente"]
 
-X = data_dummy.iloc[:,data_dummy.columns!="gostou"]
-Y = data_dummy.iloc[:, coluna]
+    # transformando as colunas de categorias em Dummy
 
+    data_dummy = pd.get_dummies(usuarioSemID)
 
+    ## separando o "like/deslike" dos dados em variaveis diferentes
+    coluna = data_dummy.columns.get_loc("gostou")
 
-## Separando os dados em dados de treino e de teste
+    X = data_dummy.iloc[:, data_dummy.columns != "gostou"]
+    Y = data_dummy.iloc[:, coluna]
 
-X_train, X_test, y_train, y_test = ms.train_test_split(X, Y, test_size = 1/5, random_state = 0)
+    ## Separando os dados em dados de treino e de teste
 
-## Treinando o modelo
+    X_train, X_test, y_train, y_test = ms.train_test_split(X, Y, test_size=1 / 5, random_state=0)
 
-classifier = LogisticRegression()
-classifier.fit(X_train, y_train)
+    ## Treinando o modelo
 
-## Previsão
+    classifier = LogisticRegression()
+    classifier.fit(X_train, y_train)
 
+    ## Previsão
+    print(breakline)
+    print()
+    print(breakline)
+    print()
+    print("Usuario " + usuario.id_cliente.unique())
 
-y_pred_prob = classifier.predict_proba(X_test)
+    y_pred_prob = classifier.predict_proba(X_test)
 
-probabilidade_de_gostar = y_pred_prob[:, 1]
-print(breakline)
-print("Probabilidade de gostar de determinada musica: ")
-print(probabilidade_de_gostar)
+    probabilidade_de_gostar = y_pred_prob[:, 1]
+    print(breakline)
+    print("Probabilidade de gostar de determinada musica: ")
+    print(probabilidade_de_gostar)
+    ProbGostar.append(probabilidade_de_gostar)
 
+    ########################
+    ## MATRIZ DE CONFUSÃO ##
+    ########################
 
+    y_prev = classifier.predict(X_test)
+    cm = confusion_matrix(y_test, y_prev)
+    print(breakline)
+    print("Matriz de confusão")
+    print(cm)
+    MatrizesDeConfusao.append(cm)
 
-###########################
-## MATRIZ DE CONFUSÃO ##
-###########################
+    #########################
+    ## Acuracia dos testes ##
+    #########################
+    print(breakline)
+    print("Precisão do modelo: ")
+    print(accuracy_score(y_test, y_prev))
+    Acuracia.append(accuracy_score(y_test, y_prev))
 
-y_prev = classifier.predict(X_test)
-cm = confusion_matrix(y_test, y_prev)
-print(breakline)
-print("Matriz de confusão")
-print(cm)
-
-
-#########################
-## Acuracia dos testes ##
-#########################
-print(breakline)
-print("Precisão do modelo: ")
-print(accuracy_score(y_test, y_prev))
-
+precisaoTotal = 0
+for precisao in Acuracia:
+    precisaoTotal += precisao
+mediaDePrecisao = precisaoTotal / len(Acuracia)
+print(mediaDePrecisao)
 
 
 
